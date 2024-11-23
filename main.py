@@ -88,8 +88,6 @@ def draw_list(draw_info, color_postion={}, clear_bg=False):
     
     if clear_bg:
         pygame.display.update()
-    
-        
 
 
 def bubble_sort(draw_info, assending=True):
@@ -187,11 +185,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-
         keys = pygame.key.get_pressed()
-
-        # if event.type != pygame.KEYDOWN:
-        #     continue
 
         if keys[pygame.K_r]:
             sorting = False
@@ -213,9 +207,6 @@ def main():
 
         elif keys[pygame.K_b]:
             bubble = True
-
-       
-
 
             
     pygame.quit()
