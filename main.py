@@ -11,6 +11,7 @@ class DrawingInfo:
     RED = 255,0,0
     GREEN = 0,255,0
     BLUE = 0,0,255
+    BROWN = 120,69,19
     GREY = 128,128,128
     L_GREY = 160,160,160
     D_GREY = 192,192,192
@@ -21,7 +22,7 @@ class DrawingInfo:
         L_GREY
     ]
 
-    BACKGROUND_COLOUR = WHITE
+    BACKGROUND_COLOUR = BROWN
 
     FONT = pygame.font.SysFont("comic-sans", 20, bold=False, italic=True)
     LARGER_FONT = pygame.font.SysFont("Arial", 25, bold=True)
@@ -44,25 +45,40 @@ class DrawingInfo:
         self.min = min(list)
 
         self.block_width = round((self.width - self.SIDE_PADDING) / len(list))
-        self.block_height = round((self.width - self.TOP_PADDING) / (self.max - self.min))
+        self.block_height = round(((self.width - 200) - self.TOP_PADDING) / (self.max - self.min))
         self.start_x = self.SIDE_PADDING // 2
         self.start_y = self.TOP_PADDING // 2
         pass
 
 
-def draw(draw_info, bubble , assending):
+def draw(draw_info, algorithm_name, ascending):
     draw_info.window.fill(draw_info.BACKGROUND_COLOUR)
 
-    title = draw_info.LARGER_FONT.render(f"{"Bubble Sort" if bubble else "Insertion Sort"} - {"Assending" if assending else "Dessending"}", 1, draw_info.BLUE)
+    # Display the sorting algorithm and order
+    title = draw_info.LARGER_FONT.render(
+        f"{algorithm_name} - {'Ascending' if ascending else 'Descending'}",
+        1,
+        draw_info.BLUE,
+    )
     draw_info.window.blit(title, (draw_info.width / 2 - title.get_width() / 2, 25))
 
-    control1 = draw_info.LARGER_FONT.render("R - Reset | SPACE - Start sorting | A - Ascending | D - Descending", 1, draw_info.BLACK)
+    # Display controls for resetting, starting, and toggling order
+    control1 = draw_info.LARGER_FONT.render(
+        "R - Reset | SPACE - Start Sorting | A - Ascending | D - Descending",
+        1,
+        draw_info.BLACK,
+    )
     draw_info.window.blit(control1, (draw_info.width / 2 - control1.get_width() / 2, 5))
 
-
-    control2 = draw_info.FONT.render("I - Insertion sort | B - Bubble sort", 1, draw_info.BLACK)
+    # Display controls for choosing sorting algorithms
+    control2 = draw_info.FONT.render(
+        "I - Insertion Sort | B - Bubble Sort | M - Merge Sort | Q - Quick Sort | S - Selection Sort",
+        1,
+        draw_info.BLACK,
+    )
     draw_info.window.blit(control2, (draw_info.width / 2 - control2.get_width() / 2, 45))
 
+    # Draw the sorting list visualization
     draw_list(draw_info)
     pygame.display.update()
 
@@ -88,6 +104,8 @@ def draw_list(draw_info, color_postion={}, clear_bg=False):
     
     if clear_bg:
         pygame.display.update()
+    
+        
 
 
 def bubble_sort(draw_info, assending=True):
@@ -128,6 +146,77 @@ def insertion_sort(draw_info, assending=True):
 
     return list
 
+def selection_sort(draw_info, ascending=True):
+    lst = draw_info.list
+
+    for i in range(len(lst)):
+        min_or_max_index = i
+        for j in range(i + 1, len(lst)):
+            if (ascending and lst[j] < lst[min_or_max_index]) or (not ascending and lst[j] > lst[min_or_max_index]):
+                min_or_max_index = j
+
+        lst[i], lst[min_or_max_index] = lst[min_or_max_index], lst[i]
+        draw_list(draw_info, {i: draw_info.RED, min_or_max_index: draw_info.GREEN}, True)
+        yield True
+
+
+def merge_sort(draw_info, ascending=True):
+    lst = draw_info.list
+
+    def merge(start, mid, end):
+        left = lst[start:mid + 1]
+        right = lst[mid + 1:end + 1]
+
+        i = j = 0
+        for k in range(start, end + 1):
+            if i < len(left) and (j >= len(right) or (ascending and left[i] <= right[j]) or (not ascending and left[i] >= right[j])):
+                lst[k] = left[i]
+                i += 1
+            else:
+                lst[k] = right[j]
+                j += 1
+            draw_list(draw_info, {k: draw_info.GREEN}, True)
+            yield True
+
+    def merge_sort_recursive(start, end):
+        if start >= end:
+            return
+
+        mid = (start + end) // 2
+        yield from merge_sort_recursive(start, mid)
+        yield from merge_sort_recursive(mid + 1, end)
+        yield from merge(start, mid, end)
+
+    yield from merge_sort_recursive(0, len(lst) - 1)
+
+
+def quick_sort(draw_info, ascending=True):
+    lst = draw_info.list
+
+    def partition(start, end):
+        pivot = lst[end]
+        p_index = start
+
+        for i in range(start, end):
+            if (ascending and lst[i] <= pivot) or (not ascending and lst[i] >= pivot):
+                lst[i], lst[p_index] = lst[p_index], lst[i]
+                draw_list(draw_info, {i: draw_info.RED, p_index: draw_info.GREEN}, True)
+                p_index += 1
+
+        lst[p_index], lst[end] = lst[end], lst[p_index]
+        draw_list(draw_info, {p_index: draw_info.BLUE}, True)
+        return p_index
+
+    def quick_sort_recursive(start, end):
+        if start >= end:
+            return
+
+        p_index = partition(start, end)
+        yield from quick_sort_recursive(start, p_index - 1)
+        yield from quick_sort_recursive(p_index + 1, end)
+
+    yield from quick_sort_recursive(0, len(lst) - 1)
+
 def generate_starting_list(n, min_val, max_val):
 
     list = []
@@ -142,20 +231,19 @@ def generate_starting_list(n, min_val, max_val):
 def main():
     running = True
     sorting = False
-    assending = False
+    ascending = True
 
-    bubble = False
+    algorithms = {
+        'B': bubble_sort,
+        'I': insertion_sort,
+        'S': selection_sort,
+        'M': merge_sort,
+        'Q': quick_sort,
+    }
 
-    sort_algorithm = [bubble_sort, insertion_sort]
-    sort_algorithm_names = ["bubble sort", "insertion sort"]
-    algo_name = ""
+    algorithm_name = "Bubble Sort"
+    algorithm = bubble_sort
     sort_generator = None
-
-    if bubble is True:
-        algo_name = sort_algorithm_names[0]
-    else:
-        algo_name = sort_algorithm_names[1]
-
 
     clock = pygame.time.Clock()
 
@@ -163,54 +251,58 @@ def main():
     min_val = 1
     max_val = 100
 
+    lst = generate_starting_list(n, min_val, max_val)
+    draw_info = DrawingInfo(1000, 800, lst)
 
-    list = generate_starting_list(n, min_val, max_val)
-    draw_info = DrawingInfo(800,800,list)
-
-
-    while(running):
-
+    while running:
         clock.tick(30)
 
-        if (sorting):
+        if sorting:
             try:
                 next(sort_generator)
             except StopIteration:
                 sorting = False
         else:
-            draw(draw_info,bubble, assending)
-
+            draw(draw_info, algorithm_name, ascending)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        keys = pygame.key.get_pressed()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    lst = generate_starting_list(n, min_val, max_val)
+                    draw_info.set_list(lst)
+                    sorting = False
 
-        if keys[pygame.K_r]:
-            sorting = False
-            list = generate_starting_list(n, min_val, max_val)
-            draw_info.list = list
-            draw(draw_info,bubble, assending)
-        elif keys[pygame.K_SPACE] and sorting == False:
-            sorting = True
-            if (bubble == True):
-                sort_generator = sort_algorithm[0](draw_info, assending)
-            if (bubble == False):
-                sort_generator = sort_algorithm[1](draw_info, assending)
-        elif keys[pygame.K_a]:
-            assending = True
-        elif keys[pygame.K_d]:
-            assending = False
-        elif keys[pygame.K_i]:
-            bubble = False
+                elif event.key == pygame.K_SPACE and not sorting:
+                    sort_generator = algorithm(draw_info, ascending)
+                    sorting = True
 
-        elif keys[pygame.K_b]:
-            bubble = True
+                elif event.key == pygame.K_a:
+                    ascending = True
 
-            
+                elif event.key == pygame.K_d:
+                    ascending = False
+
+                elif event.key in [pygame.K_b, pygame.K_i, pygame.K_s, pygame.K_m, pygame.K_q]:
+                    if event.key == pygame.K_b:
+                        algorithm = bubble_sort
+                        algorithm_name = "Bubble Sort"
+                    elif event.key == pygame.K_i:
+                        algorithm = insertion_sort
+                        algorithm_name = "Insertion Sort"
+                    elif event.key == pygame.K_s:
+                        algorithm = selection_sort
+                        algorithm_name = "Selection Sort"
+                    elif event.key == pygame.K_m:
+                        algorithm = merge_sort
+                        algorithm_name = "Merge Sort"
+                    elif event.key == pygame.K_q:
+                        algorithm = quick_sort
+                        algorithm_name = "Quick Sort"
+
     pygame.quit()
-            
 
 if __name__ == "__main__":
     main()
