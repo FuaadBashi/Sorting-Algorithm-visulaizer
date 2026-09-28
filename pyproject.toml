@@ -1,0 +1,15 @@
+[project]
+name = "sorting-visualizer"
+version = "1.0.0"
+description = "Pygame visualiser for bubble, insertion, selection, merge and quick sort."
+requires-python = ">=3.10"
+dependencies = ["pygame>=2.5"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
